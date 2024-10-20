@@ -1,0 +1,6 @@
+outs:
+- md5: ed783c393a188e260cf054066f4da3e0.dir
+  size: 3
+  nfiles: 2
+  hash: md5
+  path: output_tmp
