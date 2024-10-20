@@ -9,8 +9,6 @@ echo $PATH_TO_SECRET_KEY
 export GOOGLE_APPLICATION_CREDENTIALS=$PATH_TO_SECRET_KEY
 pipenv run dvc pull --remote scraped_raw_data --force
 
-cp data/scraped_raw_images src/newnewnew/data/
-
 cd src/newnewnew
 
 # Check if the image already exists
@@ -24,7 +22,7 @@ fi
 # Run the scraper container and redirect output to a log file
 docker run --rm --name $IMAGE_NAME \
     -v $(pwd):/src \
-    -v $(pwd)/data:/data \
+    -v $(realpath ../../data/scraped_raw_images):/app/data/scraped_raw_images \
     -v $(realpath ${SECRETS_PATH}${SECRET_FILE_NAME}):/secrets/$SECRET_FILE_NAME:ro \
     -e GOOGLE_APPLICATION_CREDENTIALS="/secrets/$SECRET_FILE_NAME" \
     $IMAGE_NAME
