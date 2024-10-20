@@ -138,10 +138,10 @@ def wrapper_function():
 
     # Final output saving
     csv_df = pd.DataFrame(csv_data)
-    output_path = f"final_output.csv"
+    output_path = f"/src/final_output.csv"
     csv_df.to_csv(output_path, index=False)
 
-    with open(f"final_output.json", 'w') as json_file:
+    with open(f"/src/final_output.json", 'w') as json_file:
         json.dump(json_data, json_file, indent=4)
 
     print(f"Total images: {total_images}, successfully processed: {len(csv_data)}, failed: {len(failed_images)}")
