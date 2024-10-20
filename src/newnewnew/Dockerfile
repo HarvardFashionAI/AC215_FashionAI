@@ -66,8 +66,8 @@ RUN pip install pipenv
 # Install any required dependencies
 ADD --chown=app:app Pipfile Pipfile.lock /app/
 
-
-RUN pipenv --python /usr/bin/python3.11
+# Install any required dependencies
+RUN pipenv sync
 
 # Set the default working directory for Python execution
 WORKDIR /app
@@ -75,4 +75,4 @@ WORKDIR /app
 # # Use ENTRYPOINT to open bash and automatically start pipenv shell
 # ENTRYPOINT ["/bin/bash", "-c", "pipenv shell && exec \"$@\"", "--"]
 
-CMD ["pipenv", "run", "python", "/src/finetune.py"]
+CMD ["pipenv", "run", "python", "/src/caption_generating.py"]

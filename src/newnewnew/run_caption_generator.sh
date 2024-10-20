@@ -4,6 +4,13 @@ TODAY=$(date +'%Y-%m-%d %H:%M:%S')
 # Load environment variables from the .env file
 export $(grep -v '^#' .env | xargs)
 
+cd ../../
+echo $PATH_TO_SECRET_KEY
+export GOOGLE_APPLICATION_CREDENTIALS=$PATH_TO_SECRET_KEY
+pipenv run dvc pull --remote scraped_raw_data --force
+
+cd src/newnewnew
+
 # Check if the image already exists
 if ! docker images $IMAGE_NAME | awk '{ print $1 }' | grep -q $IMAGE_NAME; then
     echo "Image does not exist. Building..."
@@ -15,6 +22,7 @@ fi
 # Run the scraper container and redirect output to a log file
 docker run --rm --name $IMAGE_NAME \
     -v $(pwd):/src \
+    -v ${SCRAPED_RAW_DATA}:/data \
     -v $(realpath ${SECRETS_PATH}${SECRET_FILE_NAME}):/secrets/$SECRET_FILE_NAME:ro \
     -e GOOGLE_APPLICATION_CREDENTIALS="/secrets/$SECRET_FILE_NAME" \
     $IMAGE_NAME
@@ -51,7 +59,7 @@ cd ../../
 
 
 # Add the scraped data to DVC only after ensuring there are no conflicts
-pipenv run dvc add src/captioning/output
+pipenv run dvc add app/output.csv
 
 # Push data to DVC remote
 pipenv run dvc push --remote caption_images 

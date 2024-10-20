@@ -75,28 +75,15 @@ def save_intermediate_results(csv_data, json_data, failed_images, intermediate_f
         failed_df.to_csv(failed_batch_output, index=False)
 
 def wrapper_function():
-    # Load environment variables for directories and file paths
-    captioning_raw_images = os.getenv('CAPTIONING_RAW_IMAGES')
-    output_folder = os.getenv('CAPTIONING_METADATA')
-    intermediate_folder = os.getenv('CAPTIONING_INTERMEDIATE')
-    failed_folder = os.getenv('CAPTIONING_FAILED')
-
-    # Get the last part of the path (the folder name) for each folder
-    images_folder = os.path.basename(captioning_raw_images)
-    output_folder = os.path.basename(output_folder)
-    intermediate_folder = os.path.basename(intermediate_folder)
-    failed_folder = os.path.basename(failed_folder)
+    images_folder = "data"
+    output_folder = "output"
 
     # Now you have the folder names for all the paths
     print(f"Images folder: {images_folder}")
     print(f"Output folder: {output_folder}")
-    print(f"Intermediate folder: {intermediate_folder}")
-    print(f"Failed folder: {failed_folder}")
 
     # Ensure directories exist
     os.makedirs(output_folder, exist_ok=True)
-    os.makedirs(intermediate_folder, exist_ok=True)
-    os.makedirs(failed_folder, exist_ok=True)
 
     csv_data = []
     json_data = []
@@ -129,24 +116,33 @@ def wrapper_function():
         except Exception as e:
             failed_images.append({'image_name': image_file.name, 'error': str(e)})
 
-        if total_images % 100 == 0:
-            save_intermediate_results(csv_data, json_data, failed_images, intermediate_folder, 'intermediate_output', 'intermediate_output', 'intermediate_failed', batch_num)
-            batch_num += 1
+    # Print current working directory
+    print("Current working directory (pwd):")
+    print(os.getcwd())
 
-    if total_images % 100 != 0:
-        save_intermediate_results(csv_data, json_data, failed_images, intermediate_folder, 'intermediate_output', 'intermediate_output', 'intermediate_failed', batch_num)
+    # List all folders and files in the current directory
+    print("\nList of all files and folders in the current directory:")
+    for item in os.listdir():
+        print(item)
+
+    # Check if 'output' folder exists and list its contents
+    output_dir = 'output'
+
+    if os.path.exists(output_dir) and os.path.isdir(output_dir):
+        print(f"\nContents of '{output_dir}' folder:")
+        for item in os.listdir(output_dir):
+            print(item)
+    else:
+        print(f"\n'{output_dir}' folder does not exist.")
+
 
     # Final output saving
     csv_df = pd.DataFrame(csv_data)
-    output_path = f"{output_folder}/final_output.csv"
+    output_path = f"final_output.csv"
     csv_df.to_csv(output_path, index=False)
 
-    with open(f"{output_folder}/final_output.json", 'w') as json_file:
+    with open(f"final_output.json", 'w') as json_file:
         json.dump(json_data, json_file, indent=4)
-
-    if failed_images:
-        failed_df = pd.DataFrame(failed_images)
-        failed_df.to_csv(f"{failed_folder}/failed_images.csv", index=False)
 
     print(f"Total images: {total_images}, successfully processed: {len(csv_data)}, failed: {len(failed_images)}")
 
