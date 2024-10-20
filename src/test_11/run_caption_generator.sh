@@ -1,12 +1,14 @@
 #!/bin/bash
 TODAY=$(date +'%Y-%m-%d %H:%M:%S')
 
-# Get DVC to the same directory
-cp ../../data/scraped_raw_images.dvc ./scraped_raw_images.dvc
+cd ../../
 
 # Pull data from dvc
-export GOOGLE_APPLICATION_CREDENTIALS="secret.json"
-dvc pull -r scraped_raw_data
+export GOOGLE_APPLICATION_CREDENTIALS="src/test_11/secret.json"
+pipenv run dvc pull -r scraped_raw_data
+mv data/scraped_raw_images src/test_11/scraped_raw_images
+
+cd src/test_11
 
 # Load environment variables from the .env file
 set -a
