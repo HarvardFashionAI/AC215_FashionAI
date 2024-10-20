@@ -1,0 +1,6 @@
+outs:
+- md5: 051eeb42a0f85d408ebeeddfb458025c.dir
+  size: 3104
+  nfiles: 2
+  hash: md5
+  path: intermediate_tmp

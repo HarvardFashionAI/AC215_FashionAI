@@ -1,0 +1,6 @@
+outs:
+- md5: f6501326999b63b463230677c784b208.dir
+  size: 3104
+  nfiles: 2
+  hash: md5
+  path: output_tmp
