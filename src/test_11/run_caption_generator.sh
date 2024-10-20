@@ -1,6 +1,13 @@
 #!/bin/bash
 TODAY=$(date +'%Y-%m-%d %H:%M:%S')
 
+rm -f intermediate_tmp.dvc fail_tmp.dvc output_tmp.dvc
+if [ $? -eq 0 ]; then
+    echo "Temporary DVC files removed successfully."
+else
+    echo "Failed to remove temporary DVC files."
+fi
+
 cd ../../
 
 # Pull data from dvc
