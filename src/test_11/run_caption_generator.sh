@@ -120,54 +120,46 @@ pipenv run git stash
 pipenv run git pull --rebase
 if [ $? -ne 0 ]; then
     echo "Failed to pull and rebase from the remote repository. Aborting."
-    exit 1
 fi
 
 # Add the DVC files for temp directories to Git
 pipenv run git add $(realpath "$TEMP_CAPTIONING").dvc
 if [ $? -ne 0 ]; then
     echo "Failed to add captioning DVC file to Git. Aborting."
-    exit 1
 fi
 
 pipenv run git add $(realpath "$TEMP_FAILED").dvc
 if [ $? -ne 0 ]; then
     echo "Failed to add failed DVC file to Git. Aborting."
-    exit 1
 fi
 
 pipenv run git add $(realpath "$TEMP_INTERMEDIATE").dvc
 if [ $? -ne 0 ]; then
     echo "Failed to add intermediate DVC file to Git. Aborting."
-    exit 1
 fi
 
 # Commit the changes to Git
 pipenv run git commit -m "Add DVC-tracked temp directories and captioned data for $TODAY"
 if [ $? -ne 0 ]; then
     echo "Failed to commit changes to Git. Aborting."
-    exit 1
 fi
 
 # Tag the commit with the current date and time
 pipenv run git tag run-$(date +'%Y-%m-%d-%H-%M-%S')
 if [ $? -ne 0 ]; then
     echo "Failed to create a Git tag. Aborting."
-    exit 1
 fi
 
 # Push the changes to the yushu branch
 pipenv run git push origin yushu
 if [ $? -ne 0 ]; then
     echo "Failed to push changes to the yushu branch on the remote. Aborting."
-    exit 1
 fi
 
 # Push the tags to the remote
 pipenv run git push origin --tags
 if [ $? -ne 0 ]; then
     echo "Failed to push tags to the remote repository. Aborting."
-    exit 1
 fi
 
 echo "Git operations completed successfully."
@@ -179,7 +171,6 @@ if [ $? -eq 0 ]; then
     echo "Data pushed to DVC remote 'caption_remote' successfully."
 else
     echo "Failed to push data to DVC remote. Aborting."
-    exit 1
 fi
 
 # Cleanup temporary directories after DVC operations
@@ -188,7 +179,6 @@ if [ $? -eq 0 ]; then
     echo "Temporary directories cleaned up successfully."
 else
     echo "Failed to clean up temporary directories."
-    exit 1
 fi
 
 rm -rf .dvc/cache
@@ -196,5 +186,4 @@ if [ $? -eq 0 ]; then
     echo "DVC cache cleaned up successfully."
 else
     echo "Failed to clean up DVC cache."
-    exit 1
 fi
