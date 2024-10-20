@@ -26,7 +26,11 @@ docker run --rm --name $IMAGE_NAME \
     -v $(realpath ${SECRETS_PATH}${SECRET_FILE_NAME}):/secrets/$SECRET_FILE_NAME:ro \
     -e GOOGLE_APPLICATION_CREDENTIALS="/secrets/$SECRET_FILE_NAME" \
     $IMAGE_NAME
+
 CONTAINER_EXIT_CODE=$?
+
+docker cp $IMAGE_NAME:/app/final_output.csv $(pwd)/final_output.csv
+
 
 # Check if the container ran successfully
 if [ $CONTAINER_EXIT_CODE -ne 0 ]; then
