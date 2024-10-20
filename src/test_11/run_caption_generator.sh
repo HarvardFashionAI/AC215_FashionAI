@@ -166,6 +166,7 @@ echo "Git operations completed successfully."
 
 
 # Push data to DVC remote (use new caption_remote)
+export GOOGLE_APPLICATION_CREDENTIALS="src/test_11/secret.json"
 pipenv run dvc push --remote caption_remote
 if [ $? -eq 0 ]; then
     echo "Data pushed to DVC remote 'caption_remote' successfully."
