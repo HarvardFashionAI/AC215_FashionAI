@@ -20,6 +20,7 @@ if ! docker images $IMAGE_NAME | awk '{ print $1 }' | grep -q $IMAGE_NAME; then
 else
     echo "Image already exists. Skipping build..."
 fi
+docker build -t $IMAGE_NAME .s
 
 # Run the scraper container and redirect output to a log file
 docker run --rm --name $IMAGE_NAME \
@@ -66,14 +67,13 @@ cd ../../
 
 export GOOGLE_APPLICATION_CREDENTIALS=$NEW_PATH_TO_SECRET_KEY
 # Add the scraped data to DVC only after ensuring there are no conflicts
-pipenv run dvc add src/newnewnew/final_output.json
-
+pipenv run dvc add src/newnewnew/output
 
 # Push data to DVC remote
 pipenv run dvc push --remote caption_images 
 
 # Commit the DVC changes to Git
-pipenv run git add src/captioning/output.dvc
+pipenv run git add src/newnewnew/output.dvc
 pipenv run git add $GIT_IGNORE
 
 pipenv run git commit -m "Scraped data for $TODAY"
@@ -82,7 +82,7 @@ pipenv run git commit -m "Scraped data for $TODAY"
 pipenv run git tag run-$(date +'%Y-%m-%d-%H-%M-%S')
 
 # Push the changes to Git
-pipenv run git push origin main
+pipenv run git push origin yushu
 pipenv run git push origin --tags
 
 if [ $? -ne 0 ]; then

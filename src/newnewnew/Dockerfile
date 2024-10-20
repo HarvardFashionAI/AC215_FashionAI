@@ -46,7 +46,6 @@ RUN apt-get update && apt-get install -y curl
 RUN curl https://bootstrap.pypa.io/get-pip.py -o get-pip.py && python3 get-pip.py
 
 # Switch to the new user
-USER app
 
 # Set PATH to include the local bin directory
 ENV PATH=$PATH:/home/app/.local/bin
