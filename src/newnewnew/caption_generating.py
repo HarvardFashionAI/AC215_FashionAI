@@ -75,7 +75,7 @@ def save_intermediate_results(csv_data, json_data, failed_images, intermediate_f
         failed_df.to_csv(failed_batch_output, index=False)
 
 def wrapper_function():
-    images_folder = "data"
+    images_folder = "src/data"
     output_folder = "output"
 
     # Now you have the folder names for all the paths
