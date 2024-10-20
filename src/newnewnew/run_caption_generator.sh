@@ -11,6 +11,8 @@ pipenv run dvc pull --remote scraped_raw_data --force
 
 cd src/newnewnew
 
+mkdir -p output
+
 # Check if the image already exists
 if ! docker images $IMAGE_NAME | awk '{ print $1 }' | grep -q $IMAGE_NAME; then
     echo "Image does not exist. Building..."
@@ -29,7 +31,6 @@ docker run --rm --name $IMAGE_NAME \
 
 CONTAINER_EXIT_CODE=$?
 
-docker cp $IMAGE_NAME:/app/final_output.csv $(pwd)/final_output.csv
 
 
 # Check if the container ran successfully
@@ -53,6 +54,8 @@ pipenv run git stash
 # Proceed with the rest of the script if no issues
 pipenv run git pull --rebase
 
+pipenv run git stash pop
+
 # Check if the pull created any conflicts
 if [ $? -ne 0 ]; then
     echo "There was a merge conflict. Aborting script."
@@ -61,9 +64,10 @@ fi
 
 cd ../../
 
-
+export GOOGLE_APPLICATION_CREDENTIALS=$NEW_PATH_TO_SECRET_KEY
 # Add the scraped data to DVC only after ensuring there are no conflicts
-pipenv run dvc add app/output.csv
+pipenv run dvc add src/newnewnew/final_output.json
+
 
 # Push data to DVC remote
 pipenv run dvc push --remote caption_images 
