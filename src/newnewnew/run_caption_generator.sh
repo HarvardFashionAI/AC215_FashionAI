@@ -25,7 +25,7 @@ docker build -t $IMAGE_NAME .s
 # Run the scraper container and redirect output to a log file
 docker run --rm --name $IMAGE_NAME \
     -v $(pwd):/src \
-    -v $(realpath ../../data/scraped_raw_images):/app/data/scraped_raw_images \
+    -v $(realpath ../../data/scraped_raw_images):/app/data \
     -v $(realpath ${SECRETS_PATH}${SECRET_FILE_NAME}):/secrets/$SECRET_FILE_NAME:ro \
     -e GOOGLE_APPLICATION_CREDENTIALS="/secrets/$SECRET_FILE_NAME" \
     $IMAGE_NAME
