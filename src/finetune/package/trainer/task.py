@@ -10,11 +10,15 @@ import torch
 import wandb
 from tqdm import tqdm
 
+# Check if GPU is available
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+print(f"\n\n\n\nUsing device: {device}\n\n\n\n\n")
+
 # Define dataset class
 class FashionDataset(Dataset):
     def __init__(self, json_file, image_dir, transform=None):
         with open(json_file, 'r') as f:
-            self.data = json.load(f)[:100]  # Use only the first 100 data points
+            self.data = json.load(f)  # Use all data points
         self.image_dir = image_dir
         self.transform = transform
 
@@ -41,9 +45,9 @@ def download_from_gcs(gcs_json_path, gcs_image_dir, local_json_path, local_image
     json_blob = bucket.blob(json_blob_path)
     json_blob.download_to_filename(local_json_path)
 
-    # Load JSON and filter first 100 items
+    # Load JSON and extract all items
     with open(local_json_path, 'r') as f:
-        data = json.load(f)[:100]
+        data = json.load(f)
 
     # Download images
     bucket_name, image_blob_prefix = gcs_image_dir.replace("gs://", "").split("/", 1)
@@ -56,6 +60,8 @@ def download_from_gcs(gcs_json_path, gcs_image_dir, local_json_path, local_image
                 local_path = os.path.join(local_image_dir, os.path.basename(blob.name))
                 blob.download_to_filename(local_path)
                 print(f"Downloaded {blob.name} to {local_path}")
+
+    return data
 
 
 # Function to upload model weights to GCS
@@ -76,11 +82,10 @@ def upload_to_gcs(local_path, gcs_path):
 # Parse arguments
 def parse_args():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--json_path", type=str, default="gs://fashion_ai_data/captioned_data/men_clothes/2024-11-18_11-34-54/men_clothes.json", help="Path to the JSON file in the GCP bucket.")
-    parser.add_argument("--image_dir", type=str, default="gs://fashion_ai_data/scrapped_data/men_clothes/2024-11-18_11-34-54/", help="Path to the images directory in the GCP bucket.")
+    parser.add_argument("--category", type=str, required=True, help="Category to fine-tune on (e.g., men_clothes, women_shoes).")
     parser.add_argument("--output_dir", type=str, required=True, help="GCS path to save the fine-tuned model.")
-    parser.add_argument("--batch_size", type=int, default=2, help="Training batch size.")
-    parser.add_argument("--epochs", type=int, default=1, help="Number of training epochs.")
+    parser.add_argument("--batch_size", type=int, default=16, help="Training batch size.")
+    parser.add_argument("--epochs", type=int, default=2, help="Number of training epochs.")
     parser.add_argument("--learning_rate", type=float, default=5e-6, help="Learning rate.")
     parser.add_argument("--wandb_key", dest="wandb_key", default="16", type=str, help="WandB API Key")
     return parser.parse_args()
@@ -88,23 +93,24 @@ def parse_args():
 
 def main():
     args = parse_args()
-    
+
     wandb.login(key=args.wandb_key)
-    wandb.init(project="fashionclip_test", config=args)
+    wandb.init(project=f"fashionclip_{args.category}", config=args)
+
+    # Define GCS paths based on the selected category
+    gcs_json_path = f"gs://fashion_ai_data/captioned_data/{args.category}/2024-11-18_11-34-54/{args.category}.json"
+    gcs_image_dir = f"gs://fashion_ai_data/scrapped_data/{args.category}/2024-11-18_11-34-54/"
 
     # Local paths for data
-    local_json_path = "local_test_data.json"
-    local_image_dir = "local_test_images"
+    local_json_path = "local_data.json"
+    local_image_dir = "local_images"
     local_model_dir = "local_fine_tuned_model"
 
-    # Create dedicated subfolder for the model in the output directory
-    model_subfolder = local_model_dir#os.path.join(local_model_dir, "model")
-    processor_subfolder = local_model_dir#os.path.join(local_model_dir, "processor")
-    os.makedirs(model_subfolder, exist_ok=True)
-    os.makedirs(processor_subfolder, exist_ok=True)
+    # Create directories for model saving
+    os.makedirs(local_model_dir, exist_ok=True)
 
     # Download data from GCS
-    download_from_gcs(args.json_path, args.image_dir, local_json_path, local_image_dir)
+    download_from_gcs(gcs_json_path, gcs_image_dir, local_json_path, local_image_dir)
 
     # Dataset and DataLoader
     transform = transforms.Compose([
@@ -117,7 +123,6 @@ def main():
     # Model and processor
     model = CLIPModel.from_pretrained("patrickjohncyh/fashion-clip")
     processor = CLIPProcessor.from_pretrained("patrickjohncyh/fashion-clip")
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     model.to(device)
 
     # Optimizer
@@ -146,11 +151,11 @@ def main():
         wandb.log({"epoch": epoch, "average_loss": total_loss / len(dataloader)})
 
     # Save and upload the model
-    model.save_pretrained(model_subfolder)
-    processor.save_pretrained(processor_subfolder)
+    model.save_pretrained(local_model_dir)
+    processor.save_pretrained(local_model_dir)
     upload_to_gcs(local_model_dir, args.output_dir)
 
-    print("Testing completed and model uploaded successfully.")
+    print(f"Fine-tuning on {args.category} completed and model uploaded successfully.")
 
 
 if __name__ == "__main__":

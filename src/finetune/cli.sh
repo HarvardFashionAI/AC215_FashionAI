@@ -9,9 +9,9 @@ export REPLICA_COUNT=1
 export EXECUTOR_IMAGE_URI="us-docker.pkg.dev/vertex-ai/training/pytorch-gpu.2-3.py310:latest"
 export PYTHON_PACKAGE_URI=$GCS_BUCKET_URI/trainer.tar.gz
 export PYTHON_MODULE="trainer.task"
-# export ACCELERATOR_TYPE="NVIDIA_TESLA_T4"
-# export ACCELERATOR_COUNT=1
-export GCP_REGION="us-central1" # Adjust region based on you approved quotas for GPUs
+export ACCELERATOR_TYPE="NVIDIA_TESLA_V100"
+export ACCELERATOR_COUNT=1
+export GCP_REGION="us-west1" # Adjust region based on you approved quotas for GPUs
 
 # Change the number of epochs
 #export CMDARGS="--model_name=mobilenetv2,--epochs=2,--batch_size=32,--wandb_key=$WANDB_KEY"
@@ -20,7 +20,7 @@ export GCP_REGION="us-central1" # Adjust region based on you approved quotas for
 
 echo $GCS_DATA_BUCKET_URI
 
-export CMDARGS="--output_dir=$GCS_BUCKET_URI/finetuned-fashionclip/,--wandb_key=$WANDB_KEY"
+export CMDARGS="--category=men_clothes,--output_dir=$GCS_BUCKET_URI/finetuned-fashionclip/,--wandb_key=$WANDB_KEY"
 
 # Run training with GPU
 # gcloud ai custom-jobs create \
@@ -32,10 +32,18 @@ export CMDARGS="--output_dir=$GCS_BUCKET_URI/finetuned-fashionclip/,--wandb_key=
 
 
 # Run training with No GPU
-export EXECUTOR_IMAGE_URI="us-docker.pkg.dev/vertex-ai/training/tf-cpu.2-14.py310:latest"
+export EXECUTOR_IMAGE_URI="us-docker.pkg.dev/vertex-ai/training/pytorch-gpu.2-2.py310:latest" #"us-docker.pkg.dev/vertex-ai/training/tf-cpu.2-14.py310:latest"
+# gcloud ai custom-jobs create \
+#   --region=$GCP_REGION \
+#   --display-name=$DISPLAY_NAME \
+#   --python-package-uris=$PYTHON_PACKAGE_URI \
+#   --worker-pool-spec=machine-type=$MACHINE_TYPE,replica-count=$REPLICA_COUNT,executor-image-uri=$EXECUTOR_IMAGE_URI,python-module=$PYTHON_MODULE \
+#   --args=$CMDARGS
+
+# with GPU
 gcloud ai custom-jobs create \
   --region=$GCP_REGION \
   --display-name=$DISPLAY_NAME \
   --python-package-uris=$PYTHON_PACKAGE_URI \
-  --worker-pool-spec=machine-type=$MACHINE_TYPE,replica-count=$REPLICA_COUNT,executor-image-uri=$EXECUTOR_IMAGE_URI,python-module=$PYTHON_MODULE \
+  --worker-pool-spec=machine-type=$MACHINE_TYPE,replica-count=$REPLICA_COUNT,accelerator-type=$ACCELERATOR_TYPE,accelerator-count=$ACCELERATOR_COUNT,executor-image-uri=$EXECUTOR_IMAGE_URI,python-module=$PYTHON_MODULE \
   --args=$CMDARGS
