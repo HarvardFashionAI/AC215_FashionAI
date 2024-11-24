@@ -160,14 +160,25 @@ jobs:
             echo "$var=${!var}" >> $GITHUB_ENV
           done
 
+      - name: Install Docker Compose
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y docker-compose
+
       - name: Validate Docker Compose
-        run: docker-compose -f docker-compose.yml config
+        run: docker-compose -f src/server/docker-compose.yml config
 
       - name: Start Services with Docker Compose
-        run: docker-compose -f docker-compose.yml up -d
+        run: docker-compose -f src/server/docker-compose.yml up -d --remove-orphans
+
+      - name: Wait for Services to Be Ready
+        run: sleep 100
 
       - name: Install Dependencies
         run: pip install pytest httpx pytest-asyncio numpy
 
       - name: Run Integration Tests
         run: pytest src/server/integration_tests/test_integration.py -v
+     
+      - name: Print Docker Logs
+        run: docker-compose logs
