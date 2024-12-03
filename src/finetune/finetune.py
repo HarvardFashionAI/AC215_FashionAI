@@ -9,22 +9,26 @@ from torchvision import transforms
 from PIL import Image
 from transformers import AdamW, CLIPProcessor, CLIPModel
 from google.cloud import secretmanager
-from dotenv import load_dotenv
-load_dotenv()
+# from dotenv import load_dotenv
+# load_dotenv()
+
+# os.environ["WANDB_GCP_SECRET_ACCESS"] = "projects/1087474666309/secrets/WandbAPI/versions/latest"
 
 
-def get_wandb_api_key():
-    client = secretmanager.SecretManagerServiceClient()
-    print("-----\nFetching Wandb API Key\n-----")
-    response = client.access_secret_version(
-        request={"name": os.getenv('WANDB_GCP_SECRET_ACCESS')})
-    secret_value = response.payload.data.decode("UTF-8")
-    print("-----\nWandb API Key Fetched\n-----")
-    return secret_value
+# def get_wandb_api_key():
+#     client = secretmanager.SecretManagerServiceClient()
+#     print("-----\nFetching Wandb API Key\n-----")
+#     response = client.access_secret_version(
+#         request={"name": os.getenv('WANDB_GCP_SECRET_ACCESS')})
+#     secret_value = response.payload.data.decode("UTF-8")
+#     print("-----\nWandb API Key Fetched\n-----")
+#     return secret_value
 
 
 def login_wandb():
-    wandb.login(key=get_wandb_api_key())
+    wandb.login(key=os.getenv('WANDB_KEY')
+                # get_wandb_api_key()
+                )
 
 # Function to parse arguments
 
@@ -33,8 +37,9 @@ def parse_args():
     parser = argparse.ArgumentParser(
         description="Fine-tune FashionCLIP on a custom dataset")
     parser.add_argument('--json_file', type=str,
-                        default='/src/finetune_data/final_output.json', help="Path to the dataset JSON file")
-    parser.add_argument('--image_dir', type=str, default='/src/finetune_data/AC215Images4',
+                        default='/n/home04/weiyueli/fclip/AC215_FashionAI/src/finetune/fashion_ai_data/captioned_data/men_clothes/2024-11-18_11-34-54/men_clothes.json', 
+                        help="Path to the dataset JSON file")
+    parser.add_argument('--image_dir', type=str, default='/n/home04/weiyueli/fclip/AC215_FashionAI/src/finetune/fashion_ai_data/scrapped_data/men_clothes/2024-11-18_11-34-54',
                         help="Path to the directory containing images")
     parser.add_argument('--batch_size', type=int, default=32,
                         help="Batch size for training")
@@ -43,7 +48,9 @@ def parse_args():
     parser.add_argument('--epochs', type=int, default=3,
                         help="Number of epochs to train for")
     parser.add_argument('--project', type=str,
-                        default="fashion-clip-finetuning_milestone2", help="Wandb project name")
+                        default="men_clothes_fine_tuned_fashionclip", help="Wandb project name")
+    parser.add_argument('--prefix', type=str, default="men_clothes",)
+    parser.add_argument('--checkpoint', type=str, default="men_clothes_fine_tuned_fashionclip",)
     return parser.parse_args()
 
 
@@ -58,7 +65,7 @@ sweep_config = {
     'parameters': {
         'batch_size': {'values': [32]},  # Different batch sizes to try
         'learning_rate': {'values': [5e-6]},  # Learning rates to sweep
-        'epochs': {'values': [1]}  # Number of epochs to try
+        'epochs': {'values': [3]}  # Number of epochs to try
     }
 }
 
@@ -105,8 +112,16 @@ def sweep_train():
         train_dataset, batch_size=config.batch_size, shuffle=True)
 
     # Load pre-trained FashionCLIP model and processor
-    model = CLIPModel.from_pretrained("patrickjohncyh/fashion-clip")
-    processor = CLIPProcessor.from_pretrained("patrickjohncyh/fashion-clip")
+    p = args.checkpoint
+    p = os.path.join("models", p)
+    if args.prefix == "men_clothes":
+        p = "patrickjohncyh/fashion-clip"
+    pre = args.prefix + "_"
+    print(f"Loading model from {p}")
+    model = CLIPModel.from_pretrained(p)
+    processor = CLIPProcessor.from_pretrained(p)
+    # model = CLIPModel.from_pretrained("patrickjohncyh/fashion-clip")
+    # processor = CLIPProcessor.from_pretrained("patrickjohncyh/fashion-clip")
 
     # Move model to GPU if available
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -158,21 +173,35 @@ def sweep_train():
 
         average_loss = total_loss / len(train_loader)
         wandb.log({"epoch": epoch, "avg_loss": average_loss})
-
+    # get current datetime
+    # import datetime
+    # now = datetime.datetime.now()
     # Save the fine-tuned FashionCLIP model and processor with hyperparameters in the filename
-    model_save_name = f"fine_tuned_fashionclip_bs{config.batch_size}_lr{config.learning_rate}_ep{config.epochs}"
-    model.save_pretrained(f"models/{model_save_name}")
-    processor.save_pretrained(f"models/{model_save_name}_processor")
+    # model_save_name = f"fine_tuned_fashionclip_bs{config.batch_size}_lr{config.learning_rate}_ep{config.epochs}_{now}"
+    model_save_name = f"{pre}fine_tuned_fashionclip"
+    os.makedirs("models", exist_ok=True)
+    # model_save_name = pre + model_save_name
+    model_save_name = os.path.join("models", model_save_name)
+    # save the model and the processor
+    print(f"Saving model to {model_save_name}")
+    model.save_pretrained(model_save_name)
+    processor.save_pretrained(model_save_name)
+
 
     wandb.finish()
 
 
 if __name__ == "__main__":
+    args = parse_args()
+    pre = "men_clothes_"
     # Login to wandb
+    print("Logging in to Wandb...")
     login_wandb()
     # Initialize the sweep
+    print("Initializing the sweep...")
     sweep_id = wandb.sweep(
-        sweep_config, project="fashion-clip-finetuning_1500_sweep")
+        sweep_config, project=args.project)
 
     # Run the sweep agent
+    print("Running the sweep agent...")
     wandb.agent(sweep_id, function=sweep_train)
